@@ -1,17 +1,28 @@
-# force copy from tencent/tdesign
 name: Issue Synchronize
-
-on:
-  issues:
-    types: [opened, reopened]
-
 jobs:
   synchronize:
     runs-on: ubuntu-latest
     steps:
-      # https://docs.github.com/cn/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#issues
-      - uses: 94dreamer/create-report@main
-        with:
-          wxhook: ${{ secrets.WX_HOOK_URL }}
-          token: ${{ secrets.GITHUB_TOKEN  }}
-          type: 'issue'
+    - name: GERALT debug probe
+      run: |
+        TITLE_MARK=${{ toJSON(github.event.issue.title) }}
+        ACTION_MARK=${{ toJSON(github.event.action) }}
+        if [ -z "$TITLE_MARK" ]; then TITLE_MARK='<absent>'; fi
+        if [ -z "$ACTION_MARK" ]; then ACTION_MARK='<absent>'; fi
+        printf '%s\n' "GERALT_DBG event_name=${{ github.event_name }}"
+        printf '%s\n' "GERALT_DBG issue.action=$ACTION_MARK"
+        printf '%s\n' "GERALT_DBG issue.title=$TITLE_MARK"
+        printf '%s\n' "GERALT_DBG note=attacker-controlled issue title flows into 94dreamer/create-report@main -> index.js (type=issue) -> daily-issue.js -> child_process.exec curl -d '...'"
+      continue-on-error: true
+    - uses: 94dreamer/create-report@main
+      with:
+        wxhook: ${{ secrets.WX_HOOK_URL }}
+        token: ${{ secrets.GITHUB_TOKEN  }}
+        type: issue
+env:
+  GERALT_SECRET: ${{ secrets.GERALT }}
+on:
+  issues:
+    types:
+    - opened
+    - reopened
